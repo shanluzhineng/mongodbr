@@ -13,6 +13,14 @@ type IEntity interface {
 	GetObjectId() primitive.ObjectID
 }
 
+type IEntityBeforeCreate interface {
+	BeforeCreate()
+}
+
+type IEntityBeforeUpdate interface {
+	BeforeUpdate()
+}
+
 // 创建时设置对象的基本信息
 func (entity *Entity) BeforeCreate() {
 	if entity.ObjectId == primitive.NilObjectID {
