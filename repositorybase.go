@@ -20,7 +20,7 @@ type RepositoryBase struct {
 var _ IRepository = (*RepositoryBase)(nil)
 
 // new一个新的实例
-func NewRepositoryBaseMongo(getDbCollection func() *mongo.Collection, opts ...RepositoryOption) (*RepositoryBase, error) {
+func NewRepositoryBase(getDbCollection func() *mongo.Collection, opts ...RepositoryOption) (*RepositoryBase, error) {
 	if getDbCollection == nil {
 		err := fmt.Errorf("getDbCollection参数不能为nil")
 		return nil, err
