@@ -17,7 +17,7 @@ type RepositoryBase struct {
 	collection    *mongo.Collection
 }
 
-var _ IRepositoryBaseMongo = (*RepositoryBase)(nil)
+var _ IRepository = (*RepositoryBase)(nil)
 
 // new一个新的实例
 func NewRepositoryBaseMongo(getDbCollection func() *mongo.Collection, opts ...RepositoryOption) (*RepositoryBase, error) {

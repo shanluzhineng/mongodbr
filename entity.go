@@ -35,7 +35,7 @@ func (entity *Entity) GetObjectId() primitive.ObjectID {
 type FindOption func(*options.FindOptions)
 
 // 一个抽象的用来处理任意类型的mongodb的仓储基类
-type IRepositoryBaseMongo interface {
+type IRepository interface {
 	FindAll() ([]interface{}, error)
 	CountByFilter(interface{}) (int64, error)
 	FindByFilter(interface{}, ...FindOption) ([]interface{}, error)
