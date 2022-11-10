@@ -213,7 +213,7 @@ func (r *RepositoryBase) UpdateMany(filter interface{}, update interface{}) erro
 	return nil
 }
 
-func (r *RepositoryBase) Delete(id primitive.ObjectID, contextOpts ...ServiceContextOption) error {
+func (r *RepositoryBase) DeleteOne(id primitive.ObjectID, contextOpts ...ServiceContextOption) error {
 	if len(contextOpts) <= 0 {
 		//没有设置参数，使用默认的
 		contextOpts = []ServiceContextOption{WithDefaultServiceContext()}
@@ -223,6 +223,27 @@ func (r *RepositoryBase) Delete(id primitive.ObjectID, contextOpts ...ServiceCon
 	defer cancel()
 
 	_, err := r.collection.DeleteOne(ctx, bson.M{"_id": id})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *RepositoryBase) DeleteOneByFilter(filter interface{}, contextOpts ...ServiceContextOption) error {
+	if filter == nil {
+		err := fmt.Errorf("filter参数不能为null")
+		return err
+	}
+	if len(contextOpts) <= 0 {
+		//没有设置参数，使用默认的
+		contextOpts = []ServiceContextOption{WithDefaultServiceContext()}
+	}
+	ctx := contextOpts[0]().GetContext()
+	cancel := contextOpts[0]().GetCancelFunc()
+	defer cancel()
+
+	_, err := r.collection.DeleteOne(ctx, filter)
 	if err != nil {
 		return err
 	}
