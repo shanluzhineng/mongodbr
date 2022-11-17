@@ -122,20 +122,18 @@ func (r *RepositoryBase) FindByObjectId(id primitive.ObjectID) (interface{}, err
 	return result, err
 }
 
-func (r *RepositoryBase) Create(item interface{}, contextOpts ...ServiceContextOption) error {
+func (r *RepositoryBase) Create(item interface{}, opts ...*options.InsertOneOptions) error {
 	if item == nil {
 		return fmt.Errorf("在插入%s数据时item参数不能为nil", r.documentName)
 	}
-	if len(contextOpts) <= 0 {
-		//没有设置参数，使用默认的
-		contextOpts = []ServiceContextOption{WithDefaultServiceContext()}
-	}
-	ctx := contextOpts[0]().GetContext()
-	cancel := contextOpts[0]().GetCancelFunc()
+	//没有设置参数，使用默认的
+	contextOpts := WithDefaultServiceContext()
+	ctx := contextOpts().GetContext()
+	cancel := contextOpts().GetCancelFunc()
 	defer cancel()
 
 	r.onBeforeCreate(item)
-	_, err := r.collection.InsertOne(ctx, item)
+	_, err := r.collection.InsertOne(ctx, item, opts...)
 	if err != nil {
 		if r.isDuplicateKeyError(err) {
 			return fmt.Errorf("%s中已经存在着相同的记录", r.documentName)
@@ -145,49 +143,38 @@ func (r *RepositoryBase) Create(item interface{}, contextOpts ...ServiceContextO
 	return nil
 }
 
-func (r *RepositoryBase) Update(item interface{}, contextOpts ...ServiceContextOption) error {
-	if item == nil {
+func (r *RepositoryBase) FindOneAndUpdateEntityWithId(entity interface{}, opts ...*options.FindOneAndUpdateOptions) error {
+	if entity == nil {
 		return fmt.Errorf("在更新%s数据时item参数不能为nil", r.documentName)
 	}
 
-	if len(contextOpts) <= 0 {
-		//没有设置参数，使用默认的
-		contextOpts = []ServiceContextOption{WithDefaultServiceContext()}
+	value, ok := entity.(IEntity)
+	if !ok {
+		return fmt.Errorf("entity必须实现IEntity接口")
 	}
-	ctx := contextOpts[0]().GetContext()
-	cancel := contextOpts[0]().GetCancelFunc()
-	defer cancel()
-
-	objectId := item.(IEntity).GetObjectId()
-	r.onBeforeUpdate(item)
-	if err := r.collection.FindOneAndUpdate(
-		ctx,
-		bson.M{"_id": objectId},
-		bson.M{"$set": item},
-		options.FindOneAndUpdate().SetUpsert(true),
-	).Err(); err != nil {
-		return err
-	}
-
-	return nil
+	objectId := value.GetObjectId()
+	return r.FindOneAndUpdateWithId(objectId, entity, opts...)
 }
 
-func (r *RepositoryBase) UpdateFields(objectId primitive.ObjectID, update interface{}, contextOpts ...ServiceContextOption) error {
+func (r *RepositoryBase) FindOneAndUpdateWithId(objectId primitive.ObjectID, update interface{}, opts ...*options.FindOneAndUpdateOptions) error {
 	if objectId.IsZero() {
 		return fmt.Errorf("在保存%s数据时objectId不能为nil", r.documentName)
 	}
-	if len(contextOpts) <= 0 {
-		//没有设置参数，使用默认的
-		contextOpts = []ServiceContextOption{WithDefaultServiceContext()}
-	}
-	ctx := contextOpts[0]().GetContext()
-	cancel := contextOpts[0]().GetCancelFunc()
+	//没有设置参数，使用默认的
+	contextOpts := WithDefaultServiceContext()
+	ctx := contextOpts().GetContext()
+	cancel := contextOpts().GetCancelFunc()
 	defer cancel()
 
+	if len(opts) <= 0 {
+		opts = make([]*options.FindOneAndUpdateOptions, 0)
+		opts = append(opts, options.FindOneAndUpdate().SetUpsert(true))
+	}
 	if err := r.collection.FindOneAndUpdate(
 		ctx,
 		bson.M{"_id": objectId},
-		bson.M{"$set": update},
+		update,
+		opts...,
 	).Err(); err != nil {
 		return err
 	}
@@ -195,7 +182,7 @@ func (r *RepositoryBase) UpdateFields(objectId primitive.ObjectID, update interf
 	return nil
 }
 
-func (r *RepositoryBase) UpdateMany(filter interface{}, update interface{}) error {
+func (r *RepositoryBase) UpdateMany(filter interface{}, update interface{}, opts ...*options.UpdateOptions) error {
 	if update == nil {
 		return fmt.Errorf("在保存%s数据时update参数不能为nil", r.documentName)
 	}
@@ -204,8 +191,8 @@ func (r *RepositoryBase) UpdateMany(filter interface{}, update interface{}) erro
 	cancel := contextProvider.GetCancelFunc()
 	defer cancel()
 
-	updateValue := bson.M{"$set": update}
-	_, err := r.collection.UpdateMany(ctx, filter, updateValue)
+	// updateValue := bson.M{"$set": update}
+	_, err := r.collection.UpdateMany(ctx, filter, update, opts...)
 	if err != nil {
 		return err
 	}
@@ -213,63 +200,60 @@ func (r *RepositoryBase) UpdateMany(filter interface{}, update interface{}) erro
 	return nil
 }
 
-func (r *RepositoryBase) DeleteOne(id primitive.ObjectID, contextOpts ...ServiceContextOption) error {
-	if len(contextOpts) <= 0 {
-		//没有设置参数，使用默认的
-		contextOpts = []ServiceContextOption{WithDefaultServiceContext()}
-	}
-	ctx := contextOpts[0]().GetContext()
-	cancel := contextOpts[0]().GetCancelFunc()
+// 删除指定id的记录
+func (r *RepositoryBase) DeleteOne(id primitive.ObjectID, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
+	//没有设置参数，使用默认的
+	contextOpts := WithDefaultServiceContext()
+	ctx := contextOpts().GetContext()
+	cancel := contextOpts().GetCancelFunc()
 	defer cancel()
 
-	_, err := r.collection.DeleteOne(ctx, bson.M{"_id": id})
+	result, err := r.collection.DeleteOne(ctx, bson.M{"_id": id})
 	if err != nil {
-		return err
+		return result, err
 	}
 
-	return nil
+	return result, nil
 }
 
-func (r *RepositoryBase) DeleteOneByFilter(filter interface{}, contextOpts ...ServiceContextOption) error {
+// 删除指定条件的一条记录
+func (r *RepositoryBase) DeleteOneByFilter(filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
 	if filter == nil {
 		err := fmt.Errorf("filter参数不能为null")
-		return err
+		return nil, err
 	}
-	if len(contextOpts) <= 0 {
-		//没有设置参数，使用默认的
-		contextOpts = []ServiceContextOption{WithDefaultServiceContext()}
-	}
-	ctx := contextOpts[0]().GetContext()
-	cancel := contextOpts[0]().GetCancelFunc()
+	//没有设置参数，使用默认的
+	contextOpts := WithDefaultServiceContext()
+	ctx := contextOpts().GetContext()
+	cancel := contextOpts().GetCancelFunc()
 	defer cancel()
 
-	_, err := r.collection.DeleteOne(ctx, filter)
+	result, err := r.collection.DeleteOne(ctx, filter, opts...)
 	if err != nil {
-		return err
+		return result, err
 	}
 
-	return nil
+	return result, nil
 }
 
-func (r *RepositoryBase) DeleteMany(filter interface{}, contextOpts ...ServiceContextOption) error {
+// 删除多条记录
+func (r *RepositoryBase) DeleteMany(filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
 	if filter == nil {
 		err := fmt.Errorf("无法删除多条%s记录,filter参数不能为null", r.documentName)
-		return err
+		return nil, err
 	}
-	if len(contextOpts) <= 0 {
-		//没有设置参数，使用默认的
-		contextOpts = []ServiceContextOption{WithDefaultServiceContext()}
-	}
-	ctx := contextOpts[0]().GetContext()
-	cancel := contextOpts[0]().GetCancelFunc()
+	//没有设置参数，使用默认的
+	contextOpts := WithDefaultServiceContext()
+	ctx := contextOpts().GetContext()
+	cancel := contextOpts().GetCancelFunc()
 	defer cancel()
 
-	_, err := r.collection.DeleteMany(ctx, filter)
+	result, err := r.collection.DeleteMany(ctx, filter, opts...)
 	if err != nil {
-		return err
+		return result, err
 	}
 
-	return nil
+	return result, nil
 }
 
 func (r *RepositoryBase) onBeforeCreate(item interface{}) {

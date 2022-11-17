@@ -33,19 +33,3 @@ func (entity *Entity) GetObjectId() primitive.ObjectID {
 }
 
 type FindOption func(*options.FindOptions)
-
-// 一个抽象的用来处理任意类型的mongodb的仓储基类
-type IRepository interface {
-	FindAll() (dataList []interface{}, err error)
-	CountByFilter(filter interface{}) (count int64, err error)
-	FindByFilter(filter interface{}, opts ...FindOption) (dataList []interface{}, err error)
-	FindByObjectId(id primitive.ObjectID) (dataList interface{}, err error)
-
-	Create(data interface{}, contextOpts ...ServiceContextOption) error
-	Update(data interface{}, contextOpts ...ServiceContextOption) error
-	UpdateFields(objectId primitive.ObjectID, update interface{}, contextOpts ...ServiceContextOption) error
-	UpdateMany(filter interface{}, update interface{}) error
-	DeleteOne(id primitive.ObjectID, contextOpts ...ServiceContextOption) error
-	DeleteOneByFilter(filter interface{}, contextOpts ...ServiceContextOption) error
-	DeleteMany(filter interface{}, contextOpts ...ServiceContextOption) error
-}
