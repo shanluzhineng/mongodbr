@@ -256,6 +256,17 @@ func (r *RepositoryBase) DeleteMany(filter interface{}, opts ...*options.DeleteO
 	return result, nil
 }
 
+func (r *RepositoryBase) CreateIndexIfNotExist(indexDefine EntityIndexDefine, indexOptions *options.IndexOptions) (string, error) {
+	contextOpts := WithDefaultServiceContext()
+	ctx := contextOpts().GetContext()
+	cancel := contextOpts().GetCancelFunc()
+	defer cancel()
+
+	indexModel := indexDefine.ToIndexModel()
+	indexModel.Options = indexOptions
+	return r.collection.Indexes().CreateOne(ctx, *indexModel)
+}
+
 func (r *RepositoryBase) onBeforeCreate(item interface{}) {
 	entityHookable, ok := item.(IEntityBeforeCreate)
 	if !ok {

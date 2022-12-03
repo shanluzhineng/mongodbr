@@ -23,4 +23,6 @@ type IRepository interface {
 	DeleteOne(id primitive.ObjectID, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error)
 	DeleteOneByFilter(filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error)
 	DeleteMany(filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error)
+
+	CreateIndexIfNotExist(indexDefine EntityIndexDefine, indexOptions *options.IndexOptions) (string, error)
 }
