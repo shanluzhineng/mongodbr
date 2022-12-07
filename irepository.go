@@ -10,6 +10,8 @@ import (
 type IRepository interface {
 	FindAll() (dataList []interface{}, err error)
 	CountByFilter(filter interface{}) (count int64, err error)
+	//查找一条记录
+	FindOne(filter interface{}, opts ...FindOneOption) (data interface{}, err error)
 	FindByFilter(filter interface{}, opts ...FindOption) (dataList []interface{}, err error)
 	FindByObjectId(id primitive.ObjectID) (dataList interface{}, err error)
 

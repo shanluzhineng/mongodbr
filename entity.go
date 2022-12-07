@@ -33,3 +33,5 @@ func (entity *Entity) GetObjectId() primitive.ObjectID {
 }
 
 type FindOption func(*options.FindOptions)
+
+type FindOneOption func(*options.FindOneOptions)

@@ -74,6 +74,30 @@ func (r *RepositoryBase) CountByFilter(filter interface{}) (int64, error) {
 	return total, nil
 }
 
+// 查找一条记录
+func (r *RepositoryBase) FindOne(filter interface{}, opts ...FindOneOption) (interface{}, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), r.configuration.QueryTimeout)
+	defer cancel()
+
+	//设置默认搜索参数
+	findOneOptions := options.FindOne()
+	for _, o := range opts {
+		o(findOneOptions)
+	}
+
+	result := r.configuration.createItemFunc()
+	err := r.collection.FindOne(ctx, filter, findOneOptions).Decode(result)
+	if err == mongo.ErrNoDocuments {
+		return nil, nil
+	}
+
+	if err != nil {
+		return nil, err
+	}
+	return result, err
+
+}
+
 // 根据条件来筛选
 func (r *RepositoryBase) FindByFilter(filter interface{}, opts ...FindOption) ([]interface{}, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), r.configuration.QueryTimeout)
