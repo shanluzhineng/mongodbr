@@ -146,6 +146,25 @@ func (r *RepositoryBase) FindByObjectId(id primitive.ObjectID) (interface{}, err
 	return result, err
 }
 
+// aggregate
+func (r *RepositoryBase) Aggregate(pipeline interface{}, dataList interface{}, opts ...AggregateOption) (err error) {
+	ctx, cancel := context.WithTimeout(context.Background(), r.configuration.QueryTimeout)
+	defer cancel()
+
+	//设置默认搜索参数
+	aggregateOptions := options.Aggregate()
+	for _, o := range opts {
+		o(aggregateOptions)
+	}
+	cur, err := r.collection.Aggregate(ctx, pipeline, aggregateOptions)
+	if err != nil {
+		return err
+	}
+	defer cur.Close(ctx)
+
+	return cur.All(ctx, dataList)
+}
+
 func (r *RepositoryBase) Create(item interface{}, opts ...*options.InsertOneOptions) error {
 	if item == nil {
 		return fmt.Errorf("在插入%s数据时item参数不能为nil", r.documentName)

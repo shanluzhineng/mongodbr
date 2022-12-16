@@ -34,4 +34,7 @@ func (entity *Entity) GetObjectId() primitive.ObjectID {
 
 type FindOption func(*options.FindOptions)
 
+// AggregateOptions handler pipeline
+type AggregateOption func(*options.AggregateOptions)
+
 type FindOneOption func(*options.FindOneOptions)

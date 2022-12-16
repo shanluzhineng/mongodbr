@@ -15,6 +15,9 @@ type IRepository interface {
 	FindByFilter(filter interface{}, opts ...FindOption) (dataList []interface{}, err error)
 	FindByObjectId(id primitive.ObjectID) (dataList interface{}, err error)
 
+	//aggregate
+	Aggregate(pipeline interface{}, dataList interface{}, opts ...AggregateOption) (err error)
+
 	Create(data interface{}, opts ...*options.InsertOneOptions) error
 	//更新一个IEntity接口的对象
 	// entity必须实现IEntity接口
