@@ -186,6 +186,23 @@ func (r *RepositoryBase) Create(item interface{}, opts ...*options.InsertOneOpti
 	return nil
 }
 
+// create many
+func (r *RepositoryBase) CreateMany(itemList []interface{}, opts ...*options.InsertManyOptions) (*mongo.InsertManyResult, error) {
+	if len(itemList) <= 0 {
+		return &mongo.InsertManyResult{}, nil
+	}
+	//没有设置参数，使用默认的
+	contextOpts := WithDefaultServiceContext()
+	ctx := contextOpts().GetContext()
+	cancel := contextOpts().GetCancelFunc()
+	defer cancel()
+
+	for index := range itemList {
+		r.onBeforeCreate(itemList[index])
+	}
+	return r.collection.InsertMany(ctx, itemList, opts...)
+}
+
 func (r *RepositoryBase) FindOneAndUpdateEntityWithId(entity interface{}, opts ...*options.FindOneAndUpdateOptions) error {
 	if entity == nil {
 		return fmt.Errorf("在更新%s数据时item参数不能为nil", r.documentName)

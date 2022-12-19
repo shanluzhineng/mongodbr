@@ -19,6 +19,8 @@ type IRepository interface {
 	Aggregate(pipeline interface{}, dataList interface{}, opts ...AggregateOption) (err error)
 
 	Create(data interface{}, opts ...*options.InsertOneOptions) error
+	CreateMany(itemList []interface{}, opts ...*options.InsertManyOptions) (*mongo.InsertManyResult, error)
+
 	//更新一个IEntity接口的对象
 	// entity必须实现IEntity接口
 	FindOneAndUpdateEntityWithId(entity interface{}, opts ...*options.FindOneAndUpdateOptions) error
