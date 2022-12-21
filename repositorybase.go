@@ -213,7 +213,8 @@ func (r *RepositoryBase) FindOneAndUpdateEntityWithId(entity interface{}, opts .
 		return fmt.Errorf("entity必须实现IEntity接口")
 	}
 	objectId := value.GetObjectId()
-	return r.FindOneAndUpdateWithId(objectId, entity, opts...)
+	update := NewBsonBuilder().NewOrUpdateSet(entity).ToValue()
+	return r.FindOneAndUpdateWithId(objectId, update, opts...)
 }
 
 func (r *RepositoryBase) FindOneAndUpdateWithId(objectId primitive.ObjectID, update interface{}, opts ...*options.FindOneAndUpdateOptions) error {
