@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/abmpio/mongodbr/builder"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -213,7 +214,7 @@ func (r *RepositoryBase) FindOneAndUpdateEntityWithId(entity interface{}, opts .
 		return fmt.Errorf("entity必须实现IEntity接口")
 	}
 	objectId := value.GetObjectId()
-	update := NewBsonBuilder().NewOrUpdateSet(entity).ToValue()
+	update := builder.NewBsonBuilder().NewOrUpdateSet(entity).ToValue()
 	return r.FindOneAndUpdateWithId(objectId, update, opts...)
 }
 

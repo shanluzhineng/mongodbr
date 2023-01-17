@@ -1,4 +1,4 @@
-package mongodbr
+package builder
 
 import "go.mongodb.org/mongo-driver/bson"
 
