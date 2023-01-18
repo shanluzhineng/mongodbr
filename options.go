@@ -3,8 +3,10 @@ package mongodbr
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
+	"go.mongodb.org/mongo-driver/event"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -16,6 +18,25 @@ var (
 	DefaultClient *mongo.Client
 )
 
+// enable mongodb monitor
+func EnableMongodbMonitor() func(*options.ClientOptions) {
+	return func(co *options.ClientOptions) {
+		monitor := &event.CommandMonitor{
+			Started: func(_ context.Context, e *event.CommandStartedEvent) {
+				log.Println(e.Command.String())
+			},
+			Succeeded: func(ctx context.Context, e *event.CommandSucceededEvent) {
+				log.Println(e.Reply.String())
+			},
+			Failed: func(ctx context.Context, e *event.CommandFailedEvent) {
+				log.Println("mongodb error:", e.Failure)
+			},
+		}
+
+		co.SetMonitor(monitor)
+	}
+}
+
 // 构建默认的client
 func SetupDefaultClient(uri string, opts ...func(*options.ClientOptions)) (*mongo.Client, error) {
 	//测试能否连接
@@ -23,6 +44,7 @@ func SetupDefaultClient(uri string, opts ...func(*options.ClientOptions)) (*mong
 	for _, eachOpt := range opts {
 		eachOpt(clientOptions)
 	}
+
 	client, err := mongo.Connect(context.TODO(), clientOptions)
 	if err != nil {
 		return nil, fmt.Errorf("无法初始化mongodb,在连接到mongodb时出现异常,异常信息:%s", err.Error())
