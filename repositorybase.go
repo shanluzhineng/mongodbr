@@ -230,7 +230,7 @@ func (r *RepositoryBase) FindOneAndUpdateWithId(objectId primitive.ObjectID, upd
 
 	if len(opts) <= 0 {
 		opts = make([]*options.FindOneAndUpdateOptions, 0)
-		opts = append(opts, options.FindOneAndUpdate().SetUpsert(true))
+		opts = append(opts, options.FindOneAndUpdate().SetUpsert(false))
 	}
 	if err := r.collection.FindOneAndUpdate(
 		ctx,
@@ -253,7 +253,6 @@ func (r *RepositoryBase) UpdateMany(filter interface{}, update interface{}, opts
 	cancel := contextProvider.GetCancelFunc()
 	defer cancel()
 
-	// updateValue := bson.M{"$set": update}
 	_, err := r.collection.UpdateMany(ctx, filter, update, opts...)
 	if err != nil {
 		return err
