@@ -48,18 +48,19 @@ func (r *RepositoryBase) CountByFilter(filter interface{}) (int64, error) {
 	return total, nil
 }
 
-// find*
-func (r *RepositoryBase) FindAll(opts ...FindOption) ([]interface{}, error) {
+// #region find members
+
+func (r *RepositoryBase) FindAll(opts ...FindOption) *findResult {
 	return r.FindByFilter(bson.M{}, opts...)
 }
 
 // 根据_id来查找，返回的是对象的指针
-func (r *RepositoryBase) FindByObjectId(id primitive.ObjectID) (interface{}, error) {
+func (r *RepositoryBase) FindByObjectId(id primitive.ObjectID) *findResult {
 	return r.FindOne(bson.M{"_id": id})
 }
 
 // 查找一条记录
-func (r *RepositoryBase) FindOne(filter interface{}, opts ...FindOneOption) (interface{}, error) {
+func (r *RepositoryBase) FindOne(filter interface{}, opts ...FindOneOption) *findResult {
 	ctx, cancel := context.WithTimeout(context.Background(), r.configuration.QueryTimeout)
 	defer cancel()
 
@@ -69,21 +70,21 @@ func (r *RepositoryBase) FindOne(filter interface{}, opts ...FindOneOption) (int
 		o(findOneOptions)
 	}
 
-	result := r.configuration.createItemFunc()
-	err := r.collection.FindOne(ctx, filter, findOneOptions).Decode(result)
-	if err == mongo.ErrNoDocuments {
-		return nil, nil
+	res := r.collection.FindOne(ctx, filter, findOneOptions)
+	if res.Err() != nil {
+		return &findResult{
+			configuration: r.configuration,
+			err:           res.Err(),
+		}
 	}
-
-	if err != nil {
-		return nil, err
+	return &findResult{
+		configuration: r.configuration,
+		res:           res,
 	}
-	return result, err
-
 }
 
 // 根据条件来筛选
-func (r *RepositoryBase) FindByFilter(filter interface{}, opts ...FindOption) ([]interface{}, error) {
+func (r *RepositoryBase) FindByFilter(filter interface{}, opts ...FindOption) *findResult {
 	ctx, cancel := context.WithTimeout(context.Background(), r.configuration.QueryTimeout)
 	defer cancel()
 
@@ -97,21 +98,18 @@ func (r *RepositoryBase) FindByFilter(filter interface{}, opts ...FindOption) ([
 	}
 	cur, err := r.collection.Find(ctx, filter, findOptions)
 	if err != nil {
-		return nil, err
-	}
-	defer cur.Close(ctx)
-
-	var result []interface{}
-	for cur.Next(ctx) {
-		o := r.configuration.createItemFunc()
-		if err := cur.Decode(o); err != nil {
-			return nil, err
+		return &findResult{
+			configuration: r.configuration,
+			err:           err,
 		}
-		result = append(result, o)
 	}
-
-	return result, cur.Err()
+	return &findResult{
+		configuration: r.configuration,
+		cur:           cur,
+	}
 }
+
+// #endregion
 
 // aggregate
 func (r *RepositoryBase) Aggregate(pipeline interface{}, dataList interface{}, opts ...AggregateOption) (err error) {
@@ -131,6 +129,8 @@ func (r *RepositoryBase) Aggregate(pipeline interface{}, dataList interface{}, o
 
 	return cur.All(ctx, dataList)
 }
+
+// #region create members
 
 func (r *RepositoryBase) Create(item interface{}, opts ...*options.InsertOneOptions) (id primitive.ObjectID, err error) {
 	if item == nil {
@@ -153,7 +153,6 @@ func (r *RepositoryBase) Create(item interface{}, opts ...*options.InsertOneOpti
 	return primitive.NilObjectID, ErrInvalidType
 }
 
-// create many
 func (r *RepositoryBase) CreateMany(itemList []interface{}, opts ...*options.InsertManyOptions) (ids []primitive.ObjectID, err error) {
 	if len(itemList) <= 0 {
 		return nil, nil
@@ -181,6 +180,10 @@ func (r *RepositoryBase) CreateMany(itemList []interface{}, opts ...*options.Ins
 	}
 	return ids, nil
 }
+
+// #endregion
+
+// #region update members
 
 func (r *RepositoryBase) FindOneAndUpdate(entity IEntity, opts ...*options.FindOneAndUpdateOptions) error {
 	if entity == nil {
@@ -234,6 +237,8 @@ func (r *RepositoryBase) UpdateMany(filter interface{}, update interface{}, opts
 
 	return nil
 }
+
+// #endregion
 
 func (r *RepositoryBase) ReplaceById(id primitive.ObjectID, doc interface{}, opts ...*options.ReplaceOptions) (err error) {
 	return r.Replace(bson.M{"_id": id}, doc, opts...)

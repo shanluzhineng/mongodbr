@@ -11,10 +11,10 @@ type IRepository interface {
 	CountByFilter(filter interface{}) (count int64, err error)
 
 	// find
-	FindAll(opts ...FindOption) (dataList []interface{}, err error)
-	FindByObjectId(id primitive.ObjectID) (dataList interface{}, err error)
-	FindOne(filter interface{}, opts ...FindOneOption) (data interface{}, err error)
-	FindByFilter(filter interface{}, opts ...FindOption) (dataList []interface{}, err error)
+	FindAll(opts ...FindOption) *findResult
+	FindByObjectId(id primitive.ObjectID) *findResult
+	FindOne(filter interface{}, opts ...FindOneOption) *findResult
+	FindByFilter(filter interface{}, opts ...FindOption) *findResult
 
 	// aggregate
 	Aggregate(pipeline interface{}, dataList interface{}, opts ...AggregateOption) (err error)
