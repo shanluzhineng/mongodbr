@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/abmpio/mongodbr/builder"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -38,33 +37,6 @@ func NewRepositoryBase(getDbCollection func() *mongo.Collection, opts ...Reposit
 	return repository, nil
 }
 
-func (r *RepositoryBase) FindAll() ([]interface{}, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), r.configuration.QueryTimeout)
-	defer cancel()
-
-	findOptions := options.Find()
-	if r.configuration.setDefaultSort != nil {
-		r.configuration.setDefaultSort(findOptions)
-	}
-	cur, err := r.collection.Find(ctx, bson.M{}, findOptions)
-	if err != nil {
-		return nil, err
-	}
-	defer cur.Close(ctx)
-
-	var result []interface{}
-	for cur.Next(ctx) {
-		o := r.configuration.createItemFunc()
-		if err := cur.Decode(o); err != nil {
-			return nil, err
-		}
-
-		result = append(result, o)
-	}
-
-	return result, cur.Err()
-}
-
 func (r *RepositoryBase) CountByFilter(filter interface{}) (int64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), r.configuration.QueryTimeout)
 	defer cancel()
@@ -73,6 +45,16 @@ func (r *RepositoryBase) CountByFilter(filter interface{}) (int64, error) {
 		return 0, err
 	}
 	return total, nil
+}
+
+// find*
+func (r *RepositoryBase) FindAll(opts ...FindOption) ([]interface{}, error) {
+	return r.FindByFilter(bson.M{}, opts...)
+}
+
+// 根据_id来查找，返回的是对象的指针
+func (r *RepositoryBase) FindByObjectId(id primitive.ObjectID) (interface{}, error) {
+	return r.FindOne(bson.M{"_id": id})
 }
 
 // 查找一条记录
@@ -130,23 +112,6 @@ func (r *RepositoryBase) FindByFilter(filter interface{}, opts ...FindOption) ([
 	return result, cur.Err()
 }
 
-// 根据_id来查找，返回的是对象的指针
-func (r *RepositoryBase) FindByObjectId(id primitive.ObjectID) (interface{}, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), r.configuration.QueryTimeout)
-	defer cancel()
-
-	result := r.configuration.createItemFunc()
-	err := r.collection.FindOne(ctx, bson.M{"_id": id}).Decode(result)
-	if err == mongo.ErrNoDocuments {
-		return nil, nil
-	}
-
-	if err != nil {
-		return nil, err
-	}
-	return result, err
-}
-
 // aggregate
 func (r *RepositoryBase) Aggregate(pipeline interface{}, dataList interface{}, opts ...AggregateOption) (err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), r.configuration.QueryTimeout)
@@ -166,9 +131,9 @@ func (r *RepositoryBase) Aggregate(pipeline interface{}, dataList interface{}, o
 	return cur.All(ctx, dataList)
 }
 
-func (r *RepositoryBase) Create(item interface{}, opts ...*options.InsertOneOptions) error {
+func (r *RepositoryBase) Create(item interface{}, opts ...*options.InsertOneOptions) (id primitive.ObjectID, err error) {
 	if item == nil {
-		return fmt.Errorf("在插入%s数据时item参数不能为nil", r.documentName)
+		return primitive.NilObjectID, fmt.Errorf("item is nil,col:%s", r.documentName)
 	}
 	//没有设置参数，使用默认的
 	contextOpts := WithDefaultServiceContext()
@@ -177,20 +142,20 @@ func (r *RepositoryBase) Create(item interface{}, opts ...*options.InsertOneOpti
 	defer cancel()
 
 	r.onBeforeCreate(item)
-	_, err := r.collection.InsertOne(ctx, item, opts...)
+	res, err := r.collection.InsertOne(ctx, item, opts...)
 	if err != nil {
-		if r.isDuplicateKeyError(err) {
-			return fmt.Errorf("%s中已经存在着相同的记录", r.documentName)
-		}
-		return err
+		return primitive.NilObjectID, err
 	}
-	return nil
+	if id, ok := res.InsertedID.(primitive.ObjectID); ok {
+		return id, nil
+	}
+	return primitive.NilObjectID, ErrInvalidType
 }
 
 // create many
-func (r *RepositoryBase) CreateMany(itemList []interface{}, opts ...*options.InsertManyOptions) (*mongo.InsertManyResult, error) {
+func (r *RepositoryBase) CreateMany(itemList []interface{}, opts ...*options.InsertManyOptions) (ids []primitive.ObjectID, err error) {
 	if len(itemList) <= 0 {
-		return &mongo.InsertManyResult{}, nil
+		return nil, nil
 	}
 	//没有设置参数，使用默认的
 	contextOpts := WithDefaultServiceContext()
@@ -201,22 +166,34 @@ func (r *RepositoryBase) CreateMany(itemList []interface{}, opts ...*options.Ins
 	for index := range itemList {
 		r.onBeforeCreate(itemList[index])
 	}
-	return r.collection.InsertMany(ctx, itemList, opts...)
+	res, err := r.collection.InsertMany(ctx, itemList, opts...)
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range res.InsertedIDs {
+		switch v := v.(type) {
+		case primitive.ObjectID:
+			ids = append(ids, v)
+		default:
+			return nil, ErrInvalidType
+		}
+	}
+	return ids, nil
 }
 
-func (r *RepositoryBase) FindOneAndUpdateEntityWithId(entity interface{}, opts ...*options.FindOneAndUpdateOptions) error {
-	if entity == nil {
-		return fmt.Errorf("在更新%s数据时item参数不能为nil", r.documentName)
-	}
+// func (r *RepositoryBase) FindOneAndUpdateEntityWithId(entity interface{}, opts ...*options.FindOneAndUpdateOptions) error {
+// 	if entity == nil {
+// 		return fmt.Errorf("在更新%s数据时item参数不能为nil", r.documentName)
+// 	}
 
-	value, ok := entity.(IEntity)
-	if !ok {
-		return fmt.Errorf("entity必须实现IEntity接口")
-	}
-	objectId := value.GetObjectId()
-	update := builder.NewBsonBuilder().NewOrUpdateSet(entity).ToValue()
-	return r.FindOneAndUpdateWithId(objectId, update, opts...)
-}
+// 	value, ok := entity.(IEntity)
+// 	if !ok {
+// 		return fmt.Errorf("entity必须实现IEntity接口")
+// 	}
+// 	objectId := value.GetObjectId()
+// 	update := builder.NewBsonBuilder().NewOrUpdateSet(entity).ToValue()
+// 	return r.FindOneAndUpdateWithId(objectId, update, opts...)
+// }
 
 func (r *RepositoryBase) FindOneAndUpdateWithId(objectId primitive.ObjectID, update interface{}, opts ...*options.FindOneAndUpdateOptions) error {
 	if objectId.IsZero() {
@@ -261,6 +238,23 @@ func (r *RepositoryBase) UpdateMany(filter interface{}, update interface{}, opts
 	return nil
 }
 
+func (r *RepositoryBase) ReplaceById(id primitive.ObjectID, doc interface{}, opts ...*options.ReplaceOptions) (err error) {
+	return r.Replace(bson.M{"_id": id}, doc, opts...)
+}
+
+func (r *RepositoryBase) Replace(filter interface{}, doc interface{}, opts ...*options.ReplaceOptions) (err error) {
+	contextProvider := NewDefaultServiceContextProvider()
+	ctx := contextProvider.GetContext()
+	cancel := contextProvider.GetCancelFunc()
+	defer cancel()
+
+	_, err = r.collection.ReplaceOne(ctx, filter, doc, opts...)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // 删除指定id的记录
 func (r *RepositoryBase) DeleteOne(id primitive.ObjectID, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
 	//没有设置参数，使用默认的
@@ -279,10 +273,6 @@ func (r *RepositoryBase) DeleteOne(id primitive.ObjectID, opts ...*options.Delet
 
 // 删除指定条件的一条记录
 func (r *RepositoryBase) DeleteOneByFilter(filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
-	if filter == nil {
-		err := fmt.Errorf("filter参数不能为null")
-		return nil, err
-	}
 	//没有设置参数，使用默认的
 	contextOpts := WithDefaultServiceContext()
 	ctx := contextOpts().GetContext()
@@ -317,15 +307,91 @@ func (r *RepositoryBase) DeleteMany(filter interface{}, opts ...*options.DeleteO
 	return result, nil
 }
 
-func (r *RepositoryBase) CreateIndexIfNotExist(indexDefine EntityIndexDefine, indexOptions *options.IndexOptions) (string, error) {
+// #region indexes members
+
+func (r *RepositoryBase) CreateIndex(indexDefine EntityIndexDefine, indexOptions *options.IndexOptions) (string, error) {
+	res, err := r.CreateIndexes([]EntityIndexDefine{indexDefine}, indexOptions)
+	if err != nil {
+		return "", err
+	}
+	if len(res) > 0 {
+		return res[0], nil
+	}
+	return "", nil
+}
+
+func (r *RepositoryBase) CreateIndexes(indexDefineList []EntityIndexDefine, indexOptions *options.IndexOptions) ([]string, error) {
 	contextOpts := WithDefaultServiceContext()
 	ctx := contextOpts().GetContext()
 	cancel := contextOpts().GetCancelFunc()
 	defer cancel()
 
-	indexModel := indexDefine.ToIndexModel()
-	indexModel.Options = indexOptions
-	return r.collection.Indexes().CreateOne(ctx, *indexModel)
+	indexModels := make([]mongo.IndexModel, 0)
+	for _, eachIndexDefine := range indexDefineList {
+		indexModel := eachIndexDefine.ToIndexModel()
+		indexModel.Options = indexOptions
+	}
+	return r.collection.Indexes().CreateMany(ctx, indexModels)
+}
+
+func (r *RepositoryBase) MustCreateIndex(indexDefine EntityIndexDefine, indexOptions *options.IndexOptions) {
+	r.CreateIndex(indexDefine, indexOptions)
+}
+
+func (r *RepositoryBase) MustCreateIndexes(indexDefineList []EntityIndexDefine, indexOptions *options.IndexOptions) {
+	r.CreateIndexes(indexDefineList, indexOptions)
+}
+
+func (r *RepositoryBase) DeleteIndex(name string) (err error) {
+	contextOpts := WithDefaultServiceContext()
+	ctx := contextOpts().GetContext()
+	cancel := contextOpts().GetCancelFunc()
+	defer cancel()
+
+	_, err = r.collection.Indexes().DropOne(ctx, name)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *RepositoryBase) DeleteAllIndexes() (err error) {
+	contextOpts := WithDefaultServiceContext()
+	ctx := contextOpts().GetContext()
+	cancel := contextOpts().GetCancelFunc()
+	defer cancel()
+
+	_, err = r.collection.Indexes().DropAll(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *RepositoryBase) ListIndexes() (indexes []map[string]interface{}, err error) {
+	contextOpts := WithDefaultServiceContext()
+	ctx := contextOpts().GetContext()
+	cancel := contextOpts().GetCancelFunc()
+	defer cancel()
+
+	cur, err := r.collection.Indexes().List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := cur.All(ctx, &indexes); err != nil {
+		return nil, err
+	}
+	return indexes, nil
+}
+
+// #endregion
+
+func (r *RepositoryBase) GetName() (name string) {
+	return r.documentName
+}
+
+func (r *RepositoryBase) GetCollection() (c *mongo.Collection) {
+	return r.collection
 }
 
 func (r *RepositoryBase) onBeforeCreate(item interface{}) {
@@ -336,21 +402,10 @@ func (r *RepositoryBase) onBeforeCreate(item interface{}) {
 	entityHookable.BeforeCreate()
 }
 
-func (r *RepositoryBase) onBeforeUpdate(item interface{}) {
-	entityHookable, ok := item.(IEntityBeforeUpdate)
-	if !ok {
-		return
-	}
-	entityHookable.BeforeUpdate()
-}
-
-func (r *RepositoryBase) isDuplicateKeyError(err error) bool {
-	// TODO: maybe there is (or will be) a better way of checking duplicate key error
-	// this one is based on https://github.com/mongodb/mongo-go-driver/blob/master/mongo/integration/collection_test.go#L54-L65
-	we, ok := err.(mongo.WriteException)
-	if !ok {
-		return false
-	}
-
-	return len(we.WriteErrors) > 0 && we.WriteErrors[0].Code == 11000
-}
+// func (r *RepositoryBase) onBeforeUpdate(item interface{}) {
+// 	entityHookable, ok := item.(IEntityBeforeUpdate)
+// 	if !ok {
+// 		return
+// 	}
+// 	entityHookable.BeforeUpdate()
+// }
