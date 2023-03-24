@@ -50,17 +50,17 @@ func (r *RepositoryBase) CountByFilter(filter interface{}) (int64, error) {
 
 // #region find members
 
-func (r *RepositoryBase) FindAll(opts ...FindOption) *findResult {
+func (r *RepositoryBase) FindAll(opts ...FindOption) IFindResult {
 	return r.FindByFilter(bson.M{}, opts...)
 }
 
 // 根据_id来查找，返回的是对象的指针
-func (r *RepositoryBase) FindByObjectId(id primitive.ObjectID) *findResult {
+func (r *RepositoryBase) FindByObjectId(id primitive.ObjectID) IFindResult {
 	return r.FindOne(bson.M{"_id": id})
 }
 
 // 查找一条记录
-func (r *RepositoryBase) FindOne(filter interface{}, opts ...FindOneOption) *findResult {
+func (r *RepositoryBase) FindOne(filter interface{}, opts ...FindOneOption) IFindResult {
 	ctx, cancel := context.WithTimeout(context.Background(), r.configuration.QueryTimeout)
 	defer cancel()
 
@@ -84,7 +84,7 @@ func (r *RepositoryBase) FindOne(filter interface{}, opts ...FindOneOption) *fin
 }
 
 // 根据条件来筛选
-func (r *RepositoryBase) FindByFilter(filter interface{}, opts ...FindOption) *findResult {
+func (r *RepositoryBase) FindByFilter(filter interface{}, opts ...FindOption) IFindResult {
 	ctx, cancel := context.WithTimeout(context.Background(), r.configuration.QueryTimeout)
 	defer cancel()
 
