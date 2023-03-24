@@ -24,7 +24,7 @@ type IRepository interface {
 	CreateMany(itemList []interface{}, opts ...*options.InsertManyOptions) (ids []primitive.ObjectID, err error)
 
 	// update
-	// FindOneAndUpdateEntityWithId(entity interface{}, opts ...*options.FindOneAndUpdateOptions) error
+	FindOneAndUpdate(entity IEntity, opts ...*options.FindOneAndUpdateOptions) error
 	FindOneAndUpdateWithId(objectId primitive.ObjectID, update interface{}, opts ...*options.FindOneAndUpdateOptions) error
 	UpdateMany(filter interface{}, update interface{}, opts ...*options.UpdateOptions) error
 

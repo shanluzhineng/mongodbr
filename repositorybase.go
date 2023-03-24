@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/abmpio/mongodbr/builder"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -181,19 +182,15 @@ func (r *RepositoryBase) CreateMany(itemList []interface{}, opts ...*options.Ins
 	return ids, nil
 }
 
-// func (r *RepositoryBase) FindOneAndUpdateEntityWithId(entity interface{}, opts ...*options.FindOneAndUpdateOptions) error {
-// 	if entity == nil {
-// 		return fmt.Errorf("在更新%s数据时item参数不能为nil", r.documentName)
-// 	}
+func (r *RepositoryBase) FindOneAndUpdate(entity IEntity, opts ...*options.FindOneAndUpdateOptions) error {
+	if entity == nil {
+		return fmt.Errorf("在更新%s数据时item参数不能为nil", r.documentName)
+	}
 
-// 	value, ok := entity.(IEntity)
-// 	if !ok {
-// 		return fmt.Errorf("entity必须实现IEntity接口")
-// 	}
-// 	objectId := value.GetObjectId()
-// 	update := builder.NewBsonBuilder().NewOrUpdateSet(entity).ToValue()
-// 	return r.FindOneAndUpdateWithId(objectId, update, opts...)
-// }
+	objectId := entity.GetObjectId()
+	update := builder.NewBsonBuilder().NewOrUpdateSet(entity).ToValue()
+	return r.FindOneAndUpdateWithId(objectId, update, opts...)
+}
 
 func (r *RepositoryBase) FindOneAndUpdateWithId(objectId primitive.ObjectID, update interface{}, opts ...*options.FindOneAndUpdateOptions) error {
 	if objectId.IsZero() {
