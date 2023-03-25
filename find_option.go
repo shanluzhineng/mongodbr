@@ -24,3 +24,13 @@ func FindOptionWithSort(sort bson.D) FindOption {
 		fo.SetSort(sort)
 	}
 }
+
+func FindOptionWithPage(pageIndex int64, pageSize int64) FindOption {
+	return func(fo *options.FindOptions) {
+		fo.SetLimit(pageSize)
+		if pageIndex < 1 {
+			pageIndex = 1
+		}
+		fo.SetSkip(pageSize * (pageIndex - 1))
+	}
+}
