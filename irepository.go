@@ -26,6 +26,7 @@ type IRepository interface {
 	// update
 	FindOneAndUpdate(entity IEntity, opts ...*options.FindOneAndUpdateOptions) error
 	FindOneAndUpdateWithId(objectId primitive.ObjectID, update interface{}, opts ...*options.FindOneAndUpdateOptions) error
+	UpdateOne(filter interface{}, update interface{}, opts ...*options.UpdateOptions) error
 	UpdateMany(filter interface{}, update interface{}, opts ...*options.UpdateOptions) error
 
 	// replace*

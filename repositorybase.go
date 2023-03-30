@@ -221,10 +221,21 @@ func (r *RepositoryBase) FindOneAndUpdateWithId(objectId primitive.ObjectID, upd
 	return nil
 }
 
-func (r *RepositoryBase) UpdateMany(filter interface{}, update interface{}, opts ...*options.UpdateOptions) error {
-	if update == nil {
-		return fmt.Errorf("在保存%s数据时update参数不能为nil", r.documentName)
+func (r *RepositoryBase) UpdateOne(filter interface{}, update interface{}, opts ...*options.UpdateOptions) error {
+	contextProvider := NewDefaultServiceContextProvider()
+	ctx := contextProvider.GetContext()
+	cancel := contextProvider.GetCancelFunc()
+	defer cancel()
+
+	_, err := r.collection.UpdateOne(ctx, filter, update, opts...)
+	if err != nil {
+		return err
 	}
+
+	return nil
+}
+
+func (r *RepositoryBase) UpdateMany(filter interface{}, update interface{}, opts ...*options.UpdateOptions) error {
 	contextProvider := NewDefaultServiceContextProvider()
 	ctx := contextProvider.GetContext()
 	cancel := contextProvider.GetCancelFunc()
