@@ -9,7 +9,6 @@ import (
 	"go.mongodb.org/mongo-driver/event"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
 var (
@@ -54,21 +53,6 @@ func SetupDefaultClient(uri string, opts ...func(*options.ClientOptions)) (*mong
 	return DefaultClient, nil
 }
 
-func Ping() error {
-	if DefaultClient == nil {
-		return fmt.Errorf("先调用SetupDefaultClient方法创建好一个Client对象后,再调用此方法")
-	}
-	//测试ping
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-	err := DefaultClient.Ping(ctx, readpref.Primary())
-	if err != nil {
-		return fmt.Errorf("mongodb ping测试时出现异常,异常信息:%s", err.Error())
-	}
-	fmt.Println("mongodb ping测试正常")
-	return nil
-}
-
 type Configuration struct {
 	QueryTimeout time.Duration
 
@@ -76,6 +60,13 @@ type Configuration struct {
 	createItemFunc func() interface{}
 	//查询时设置默认的排序
 	setDefaultSort func(*options.FindOptions) *options.FindOptions
+}
+
+func (c *Configuration) safeCreateItem() interface{} {
+	if c.createItemFunc == nil {
+		return make(map[string]interface{})
+	}
+	return c.createItemFunc()
 }
 
 func NewConfiguration() *Configuration {

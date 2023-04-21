@@ -60,7 +60,7 @@ func (r *findResult) One(val interface{}) (err error) {
 }
 
 func (r *findResult) ToOne() (interface{}, error) {
-	result := r.configuration.createItemFunc()
+	result := r.configuration.safeCreateItem()
 	err := r.One(result)
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		return nil, nil
@@ -103,7 +103,7 @@ func (r *findResult) ToAll() ([]interface{}, error) {
 
 	var result []interface{}
 	for r.cur.Next(ctx) {
-		o := r.configuration.createItemFunc()
+		o := r.configuration.safeCreateItem()
 		if err := r.cur.Decode(o); err != nil {
 			return nil, err
 		}
