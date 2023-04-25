@@ -39,3 +39,16 @@ func FindTByObjectId[T any](repository IRepository, id primitive.ObjectID) (*T, 
 	}
 	return result, nil
 }
+
+// find one by _id
+func FindOneTByFilter[T any](repository IRepository, filter interface{}, opts ...FindOneOption) (*T, error) {
+	res := repository.FindOne(filter, opts...)
+	result := new(T)
+	if err := res.One(result); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return result, nil
+}
