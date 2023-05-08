@@ -24,19 +24,6 @@ type findResult struct {
 	configuration *Configuration
 }
 
-func newFindResult() *findResult {
-	return &findResult{
-		configuration: NewConfiguration(),
-	}
-}
-
-func newFindResultWithError(err error) *findResult {
-	return &findResult{
-		err:           err,
-		configuration: NewConfiguration(),
-	}
-}
-
 // #IFindResult members
 
 func (r *findResult) One(val interface{}) (err error) {

@@ -2,6 +2,8 @@ package mongodbr
 
 import (
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // can audit creation entity
@@ -20,6 +22,10 @@ type AuditedEntity struct {
 	LastModificationTime *time.Time `json:"lastModificationTime,omitempty" bson:"lastModificationTime"`
 	//last modification user
 	LastModifierId string `json:"lastModifierId,omitempty" bson:"lastModifierId"`
+}
+
+func (e AuditedEntity) GetObjectId() primitive.ObjectID {
+	return e.ObjectId
 }
 
 func (entity *CreationAuditedEntity) BeforeCreate() {
