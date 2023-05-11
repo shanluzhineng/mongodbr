@@ -13,6 +13,10 @@ const (
 	op_array_push string = "$push"
 	// Removes all matching values from an array.
 	op_array_pullAll string = "$pullAll"
+
+	//The $elemMatch operator matches documents that contain an array field with at least one element
+	// that matches all the specified query criteria.
+	op_array_elemMatch string = "$elemMatch"
 )
 
 func (l *OpList) AddToSet() string {
@@ -33,4 +37,8 @@ func (l *OpList) Push() string {
 
 func (l *OpList) PullAll() string {
 	return op_array_pullAll
+}
+
+func (l *OpList) ElemMatch() string {
+	return op_array_elemMatch
 }
