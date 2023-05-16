@@ -55,14 +55,3 @@ type IEntityDelete interface {
 	DeleteOneByFilter(filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error)
 	DeleteMany(filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error)
 }
-
-type IEntityIndex interface {
-	// index
-	CreateIndex(indexDefine EntityIndexDefine, indexOptions *options.IndexOptions) (string, error)
-	CreateIndexes(indexDefineList []EntityIndexDefine, indexOptions *options.IndexOptions) ([]string, error)
-	MustCreateIndex(indexDefine EntityIndexDefine, indexOptions *options.IndexOptions)
-	MustCreateIndexes(indexDefineList []EntityIndexDefine, indexOptions *options.IndexOptions)
-	DeleteIndex(name string) (err error)
-	DeleteAllIndexes() (err error)
-	ListIndexes() (indexes []map[string]interface{}, err error)
-}

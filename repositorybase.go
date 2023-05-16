@@ -2,6 +2,7 @@ package mongodbr
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/abmpio/mongodbr/builder"
@@ -11,11 +12,27 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+type MongoCol struct {
+	configuration *Configuration
+	collection    *mongo.Collection
+}
+
+// new MongoCol instance, panic if col is nil
+func NewMongoCol(col *mongo.Collection) *MongoCol {
+	if col == nil {
+		panic(errors.New("col cannot be nil"))
+	}
+	c := &MongoCol{
+		configuration: NewConfiguration(),
+		collection:    col,
+	}
+	return c
+}
+
 // RepositoryBase represents a mongodb repository
 type RepositoryBase struct {
-	configuration *Configuration
-	documentName  string
-	collection    *mongo.Collection
+	documentName string
+	*MongoCol
 }
 
 var _ IRepository = (*RepositoryBase)(nil)
@@ -28,9 +45,8 @@ func NewRepositoryBase(getDbCollection func() *mongo.Collection, opts ...Reposit
 	}
 	coll := getDbCollection()
 	repository := &RepositoryBase{
-		collection:    coll,
-		documentName:  coll.Name(),
-		configuration: NewConfiguration(),
+		MongoCol:     NewMongoCol(coll),
+		documentName: coll.Name(),
 	}
 	for _, eachItem := range opts {
 		eachItem(repository.configuration)
@@ -319,85 +335,6 @@ func (r *RepositoryBase) DeleteMany(filter interface{}, opts ...*options.DeleteO
 
 	return result, nil
 }
-
-// #region indexes members
-
-func (r *RepositoryBase) CreateIndex(indexDefine EntityIndexDefine, indexOptions *options.IndexOptions) (string, error) {
-	res, err := r.CreateIndexes([]EntityIndexDefine{indexDefine}, indexOptions)
-	if err != nil {
-		return "", err
-	}
-	if len(res) > 0 {
-		return res[0], nil
-	}
-	return "", nil
-}
-
-func (r *RepositoryBase) CreateIndexes(indexDefineList []EntityIndexDefine, indexOptions *options.IndexOptions) ([]string, error) {
-	contextOpts := WithDefaultServiceContext()
-	ctx := contextOpts().GetContext()
-	cancel := contextOpts().GetCancelFunc()
-	defer cancel()
-
-	indexModels := make([]mongo.IndexModel, 0)
-	for _, eachIndexDefine := range indexDefineList {
-		indexModel := eachIndexDefine.ToIndexModel()
-		indexModel.Options = indexOptions
-	}
-	return r.collection.Indexes().CreateMany(ctx, indexModels)
-}
-
-func (r *RepositoryBase) MustCreateIndex(indexDefine EntityIndexDefine, indexOptions *options.IndexOptions) {
-	r.CreateIndex(indexDefine, indexOptions)
-}
-
-func (r *RepositoryBase) MustCreateIndexes(indexDefineList []EntityIndexDefine, indexOptions *options.IndexOptions) {
-	r.CreateIndexes(indexDefineList, indexOptions)
-}
-
-func (r *RepositoryBase) DeleteIndex(name string) (err error) {
-	contextOpts := WithDefaultServiceContext()
-	ctx := contextOpts().GetContext()
-	cancel := contextOpts().GetCancelFunc()
-	defer cancel()
-
-	_, err = r.collection.Indexes().DropOne(ctx, name)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (r *RepositoryBase) DeleteAllIndexes() (err error) {
-	contextOpts := WithDefaultServiceContext()
-	ctx := contextOpts().GetContext()
-	cancel := contextOpts().GetCancelFunc()
-	defer cancel()
-
-	_, err = r.collection.Indexes().DropAll(ctx)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (r *RepositoryBase) ListIndexes() (indexes []map[string]interface{}, err error) {
-	contextOpts := WithDefaultServiceContext()
-	ctx := contextOpts().GetContext()
-	cancel := contextOpts().GetCancelFunc()
-	defer cancel()
-
-	cur, err := r.collection.Indexes().List(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if err := cur.All(ctx, &indexes); err != nil {
-		return nil, err
-	}
-	return indexes, nil
-}
-
-// #endregion
 
 func (r *RepositoryBase) GetName() (name string) {
 	return r.documentName
