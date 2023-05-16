@@ -25,16 +25,6 @@ type IRepository interface {
 	GetCollection() (c *mongo.Collection)
 }
 
-type IEntityFind interface {
-	CountByFilter(filter interface{}) (count int64, err error)
-
-	// find
-	FindAll(opts ...FindOption) IFindResult
-	FindByObjectId(id primitive.ObjectID) IFindResult
-	FindOne(filter interface{}, opts ...FindOneOption) IFindResult
-	FindByFilter(filter interface{}, opts ...FindOption) IFindResult
-}
-
 type IEntityCreate interface {
 	// create
 	Create(data interface{}, opts ...*options.InsertOneOptions) (id primitive.ObjectID, err error)
