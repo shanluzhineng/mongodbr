@@ -21,7 +21,9 @@ func FindOptionWithLimit(limit int64) FindOption {
 
 func FindOptionWithSort(sort bson.D) FindOption {
 	return func(fo *options.FindOptions) {
-		fo.SetSort(sort)
+		if len(sort) > 0 {
+			fo.SetSort(sort)
+		}
 	}
 }
 
