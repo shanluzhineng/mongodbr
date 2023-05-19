@@ -79,7 +79,7 @@ func (c *Configuration) safeCreateItem() interface{} {
 
 func NewConfiguration() *Configuration {
 	return &Configuration{
-		QueryTimeout: 30 * time.Second,
+		QueryTimeout: 120 * time.Second,
 	}
 }
 
