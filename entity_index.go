@@ -21,11 +21,8 @@ var _ IEntityIndex = (*MongoCol)(nil)
 // #region indexes members
 
 func (r *MongoCol) CreateIndex(indexModel mongo.IndexModel, opts ...*options.CreateIndexesOptions) (string, error) {
-	contextOpts := WithDefaultServiceContext()
-	ctx := contextOpts().GetContext()
-	cancel := contextOpts().GetCancelFunc()
+	ctx, cancel := CreateContext(r.configuration)
 	defer cancel()
-
 	name, err := r.collection.Indexes().CreateOne(ctx, indexModel, opts...)
 	if err != nil {
 		return "", err
@@ -34,9 +31,7 @@ func (r *MongoCol) CreateIndex(indexModel mongo.IndexModel, opts ...*options.Cre
 }
 
 func (r *MongoCol) CreateIndexes(indexModelList []mongo.IndexModel, opts ...*options.CreateIndexesOptions) ([]string, error) {
-	contextOpts := WithDefaultServiceContext()
-	ctx := contextOpts().GetContext()
-	cancel := contextOpts().GetCancelFunc()
+	ctx, cancel := CreateContext(r.configuration)
 	defer cancel()
 
 	return r.collection.Indexes().CreateMany(ctx, indexModelList, opts...)
@@ -51,9 +46,7 @@ func (r *MongoCol) MustCreateIndexes(indexModelList []mongo.IndexModel, opts ...
 }
 
 func (r *MongoCol) DeleteIndex(name string) (err error) {
-	contextOpts := WithDefaultServiceContext()
-	ctx := contextOpts().GetContext()
-	cancel := contextOpts().GetCancelFunc()
+	ctx, cancel := CreateContext(r.configuration)
 	defer cancel()
 
 	_, err = r.collection.Indexes().DropOne(ctx, name)
@@ -64,9 +57,7 @@ func (r *MongoCol) DeleteIndex(name string) (err error) {
 }
 
 func (r *MongoCol) DeleteAllIndexes() (err error) {
-	contextOpts := WithDefaultServiceContext()
-	ctx := contextOpts().GetContext()
-	cancel := contextOpts().GetCancelFunc()
+	ctx, cancel := CreateContext(r.configuration)
 	defer cancel()
 
 	_, err = r.collection.Indexes().DropAll(ctx)
@@ -77,9 +68,7 @@ func (r *MongoCol) DeleteAllIndexes() (err error) {
 }
 
 func (r *MongoCol) ListIndexes() (indexes []map[string]interface{}, err error) {
-	contextOpts := WithDefaultServiceContext()
-	ctx := contextOpts().GetContext()
-	cancel := contextOpts().GetCancelFunc()
+	ctx, cancel := CreateContext(r.configuration)
 	defer cancel()
 
 	cur, err := r.collection.Indexes().List(ctx)

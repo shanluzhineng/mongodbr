@@ -1,8 +1,6 @@
 package mongodbr
 
 import (
-	"context"
-
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -22,7 +20,7 @@ type IEntityFind interface {
 var _ IEntityFind = (*MongoCol)(nil)
 
 func (r *MongoCol) CountByFilter(filter interface{}) (int64, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), r.configuration.QueryTimeout)
+	ctx, cancel := CreateContext(r.configuration)
 	defer cancel()
 	total, err := r.collection.CountDocuments(ctx, filter)
 	if err != nil {
@@ -32,7 +30,7 @@ func (r *MongoCol) CountByFilter(filter interface{}) (int64, error) {
 }
 
 func (r *MongoCol) CountAll() (count int64, err error) {
-	ctx, cancel := context.WithTimeout(context.Background(), r.configuration.QueryTimeout)
+	ctx, cancel := CreateContext(r.configuration)
 	defer cancel()
 	total, err := r.collection.EstimatedDocumentCount(ctx)
 	if err != nil {
@@ -52,7 +50,7 @@ func (r *MongoCol) FindByObjectId(id primitive.ObjectID) IFindResult {
 
 // 查找一条记录
 func (r *MongoCol) FindOne(filter interface{}, opts ...FindOneOption) IFindResult {
-	ctx, cancel := context.WithTimeout(context.Background(), r.configuration.QueryTimeout)
+	ctx, cancel := CreateContext(r.configuration)
 	defer cancel()
 
 	//设置默认搜索参数
@@ -76,7 +74,7 @@ func (r *MongoCol) FindOne(filter interface{}, opts ...FindOneOption) IFindResul
 
 // 根据条件来筛选
 func (r *MongoCol) FindByFilter(filter interface{}, opts ...FindOption) IFindResult {
-	ctx, cancel := context.WithTimeout(context.Background(), r.configuration.QueryTimeout)
+	ctx, cancel := CreateContext(r.configuration)
 	defer cancel()
 
 	//设置默认搜索参数

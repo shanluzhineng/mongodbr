@@ -35,9 +35,7 @@ func (r *findResult) One(val interface{}) (err error) {
 	}
 
 	//没有设置参数，使用默认的
-	contextOpts := WithDefaultServiceContext()
-	ctx := contextOpts().GetContext()
-	cancel := contextOpts().GetCancelFunc()
+	ctx, cancel := CreateContext(r.configuration)
 	defer cancel()
 
 	if !r.cur.TryNext(ctx) {
@@ -60,10 +58,7 @@ func (r *findResult) All(val interface{}) (err error) {
 		return r.err
 	}
 
-	//没有设置参数，使用默认的
-	contextOpts := WithDefaultServiceContext()
-	ctx := contextOpts().GetContext()
-	cancel := contextOpts().GetCancelFunc()
+	ctx, cancel := CreateContext(r.configuration)
 	defer cancel()
 	if r.cur == nil {
 		return ErrNoCursor
@@ -82,9 +77,7 @@ func (r *findResult) ToAll() ([]interface{}, error) {
 		return nil, nil
 	}
 	//没有设置参数，使用默认的
-	contextOpts := WithDefaultServiceContext()
-	ctx := contextOpts().GetContext()
-	cancel := contextOpts().GetCancelFunc()
+	ctx, cancel := CreateContext(r.configuration)
 	defer cancel()
 	defer r.cur.Close(ctx)
 

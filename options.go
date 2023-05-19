@@ -62,6 +62,14 @@ type Configuration struct {
 	setDefaultSort func(*options.FindOptions) *options.FindOptions
 }
 
+func CreateContext(c *Configuration) (context.Context, context.CancelFunc) {
+	if c == nil || c.QueryTimeout <= 0 {
+		ctx := context.TODO()
+		return context.WithCancel(ctx)
+	}
+	return context.WithTimeout(context.Background(), c.QueryTimeout)
+}
+
 func (c *Configuration) safeCreateItem() interface{} {
 	if c.createItemFunc == nil {
 		return make(map[string]interface{})

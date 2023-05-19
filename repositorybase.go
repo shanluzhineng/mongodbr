@@ -1,7 +1,6 @@
 package mongodbr
 
 import (
-	"context"
 	"errors"
 	"fmt"
 
@@ -18,15 +17,19 @@ type MongoCol struct {
 }
 
 // new MongoCol instance, panic if col is nil
-func NewMongoCol(col *mongo.Collection) *MongoCol {
+func NewMongoCol(col *mongo.Collection, opts ...*Configuration) *MongoCol {
 	if col == nil {
 		panic(errors.New("col cannot be nil"))
 	}
-	c := &MongoCol{
-		configuration: NewConfiguration(),
+	c := NewConfiguration()
+	if len(opts) > 0 {
+		c = opts[0]
+	}
+	mongoCol := &MongoCol{
+		configuration: c,
 		collection:    col,
 	}
-	return c
+	return mongoCol
 }
 
 // RepositoryBase represents a mongodb repository
@@ -56,7 +59,7 @@ func NewRepositoryBase(getDbCollection func() *mongo.Collection, opts ...Reposit
 
 // aggregate
 func (r *RepositoryBase) Aggregate(pipeline interface{}, dataList interface{}, opts ...AggregateOption) (err error) {
-	ctx, cancel := context.WithTimeout(context.Background(), r.configuration.QueryTimeout)
+	ctx, cancel := CreateContext(r.configuration)
 	defer cancel()
 
 	//设置默认搜索参数
@@ -79,10 +82,7 @@ func (r *RepositoryBase) Create(item interface{}, opts ...*options.InsertOneOpti
 	if item == nil {
 		return primitive.NilObjectID, fmt.Errorf("item is nil,col:%s", r.documentName)
 	}
-	//没有设置参数，使用默认的
-	contextOpts := WithDefaultServiceContext()
-	ctx := contextOpts().GetContext()
-	cancel := contextOpts().GetCancelFunc()
+	ctx, cancel := CreateContext(r.configuration)
 	defer cancel()
 
 	r.onBeforeCreate(item)
@@ -100,10 +100,7 @@ func (r *RepositoryBase) CreateMany(itemList []interface{}, opts ...*options.Ins
 	if len(itemList) <= 0 {
 		return nil, nil
 	}
-	//没有设置参数，使用默认的
-	contextOpts := WithDefaultServiceContext()
-	ctx := contextOpts().GetContext()
-	cancel := contextOpts().GetCancelFunc()
+	ctx, cancel := CreateContext(r.configuration)
 	defer cancel()
 
 	for index := range itemList {
@@ -143,9 +140,7 @@ func (r *RepositoryBase) FindOneAndUpdateWithId(objectId primitive.ObjectID, upd
 		return fmt.Errorf("在保存%s数据时objectId不能为nil", r.documentName)
 	}
 	//没有设置参数，使用默认的
-	contextOpts := WithDefaultServiceContext()
-	ctx := contextOpts().GetContext()
-	cancel := contextOpts().GetCancelFunc()
+	ctx, cancel := CreateContext(r.configuration)
 	defer cancel()
 
 	if len(opts) <= 0 {
@@ -165,9 +160,7 @@ func (r *RepositoryBase) FindOneAndUpdateWithId(objectId primitive.ObjectID, upd
 }
 
 func (r *RepositoryBase) UpdateOne(filter interface{}, update interface{}, opts ...*options.UpdateOptions) error {
-	contextProvider := NewDefaultServiceContextProvider()
-	ctx := contextProvider.GetContext()
-	cancel := contextProvider.GetCancelFunc()
+	ctx, cancel := CreateContext(r.configuration)
 	defer cancel()
 
 	_, err := r.collection.UpdateOne(ctx, filter, update, opts...)
@@ -179,9 +172,7 @@ func (r *RepositoryBase) UpdateOne(filter interface{}, update interface{}, opts 
 }
 
 func (r *RepositoryBase) UpdateMany(filter interface{}, update interface{}, opts ...*options.UpdateOptions) error {
-	contextProvider := NewDefaultServiceContextProvider()
-	ctx := contextProvider.GetContext()
-	cancel := contextProvider.GetCancelFunc()
+	ctx, cancel := CreateContext(r.configuration)
 	defer cancel()
 
 	_, err := r.collection.UpdateMany(ctx, filter, update, opts...)
@@ -199,9 +190,7 @@ func (r *RepositoryBase) ReplaceById(id primitive.ObjectID, doc interface{}, opt
 }
 
 func (r *RepositoryBase) Replace(filter interface{}, doc interface{}, opts ...*options.ReplaceOptions) (err error) {
-	contextProvider := NewDefaultServiceContextProvider()
-	ctx := contextProvider.GetContext()
-	cancel := contextProvider.GetCancelFunc()
+	ctx, cancel := CreateContext(r.configuration)
 	defer cancel()
 
 	_, err = r.collection.ReplaceOne(ctx, filter, doc, opts...)
@@ -213,10 +202,7 @@ func (r *RepositoryBase) Replace(filter interface{}, doc interface{}, opts ...*o
 
 // 删除指定id的记录
 func (r *RepositoryBase) DeleteOne(id primitive.ObjectID, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
-	//没有设置参数，使用默认的
-	contextOpts := WithDefaultServiceContext()
-	ctx := contextOpts().GetContext()
-	cancel := contextOpts().GetCancelFunc()
+	ctx, cancel := CreateContext(r.configuration)
 	defer cancel()
 
 	result, err := r.collection.DeleteOne(ctx, bson.M{"_id": id})
@@ -229,10 +215,7 @@ func (r *RepositoryBase) DeleteOne(id primitive.ObjectID, opts ...*options.Delet
 
 // 删除指定条件的一条记录
 func (r *RepositoryBase) DeleteOneByFilter(filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
-	//没有设置参数，使用默认的
-	contextOpts := WithDefaultServiceContext()
-	ctx := contextOpts().GetContext()
-	cancel := contextOpts().GetCancelFunc()
+	ctx, cancel := CreateContext(r.configuration)
 	defer cancel()
 
 	result, err := r.collection.DeleteOne(ctx, filter, opts...)
@@ -249,10 +232,7 @@ func (r *RepositoryBase) DeleteMany(filter interface{}, opts ...*options.DeleteO
 		err := fmt.Errorf("无法删除多条%s记录,filter参数不能为null", r.documentName)
 		return nil, err
 	}
-	//没有设置参数，使用默认的
-	contextOpts := WithDefaultServiceContext()
-	ctx := contextOpts().GetContext()
-	cancel := contextOpts().GetCancelFunc()
+	ctx, cancel := CreateContext(r.configuration)
 	defer cancel()
 
 	result, err := r.collection.DeleteMany(ctx, filter, opts...)
