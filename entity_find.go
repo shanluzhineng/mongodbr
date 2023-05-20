@@ -15,6 +15,8 @@ type IEntityFind interface {
 	FindByObjectId(id primitive.ObjectID) IFindResult
 	FindOne(filter interface{}, opts ...FindOneOption) IFindResult
 	FindByFilter(filter interface{}, opts ...FindOption) IFindResult
+
+	Distinct(fieldName string, filter interface{}) ([]interface{}, error)
 }
 
 var _ IEntityFind = (*MongoCol)(nil)
@@ -96,4 +98,11 @@ func (r *MongoCol) FindByFilter(filter interface{}, opts ...FindOption) IFindRes
 		configuration: r.configuration,
 		cur:           cur,
 	}
+}
+
+func (r *MongoCol) Distinct(fieldName string, filter interface{}) ([]interface{}, error) {
+	ctx, cancel := CreateContext(r.configuration)
+	defer cancel()
+
+	return r.collection.Distinct(ctx, fieldName, filter)
 }
