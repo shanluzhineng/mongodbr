@@ -36,7 +36,7 @@ type IEntityUpdate interface {
 	FindOneAndUpdate(entity IEntity, opts ...*options.FindOneAndUpdateOptions) error
 	FindOneAndUpdateWithId(objectId primitive.ObjectID, update interface{}, opts ...*options.FindOneAndUpdateOptions) error
 	UpdateOne(filter interface{}, update interface{}, opts ...*options.UpdateOptions) error
-	UpdateMany(filter interface{}, update interface{}, opts ...*options.UpdateOptions) error
+	UpdateMany(filter interface{}, update interface{}, opts ...*options.UpdateOptions) (interface{}, error)
 }
 
 type IEntityDelete interface {

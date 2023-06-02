@@ -171,16 +171,23 @@ func (r *RepositoryBase) UpdateOne(filter interface{}, update interface{}, opts 
 	return nil
 }
 
-func (r *RepositoryBase) UpdateMany(filter interface{}, update interface{}, opts ...*options.UpdateOptions) error {
+func (r *RepositoryBase) UpdateMany(filter interface{}, update interface{}, opts ...*options.UpdateOptions) (interface{}, error) {
 	ctx, cancel := CreateContext(r.configuration)
 	defer cancel()
 
-	_, err := r.collection.UpdateMany(ctx, filter, update, opts...)
+	result, err := r.collection.UpdateMany(ctx, filter, update, opts...)
 	if err != nil {
-		return err
+		if result != nil {
+			return result.UpsertedID, err
+		} else {
+			return nil, err
+		}
 	}
 
-	return nil
+	if result != nil {
+		return result.UpsertedID, nil
+	}
+	return nil, nil
 }
 
 // #endregion
