@@ -13,18 +13,25 @@ const (
 	op_comparison_or string = "$or"
 )
 
-func (l *OpList) And() string {
-	return op_comparison_and
+func init() {
+	_opList[op_comparison_and] = &Op{name: op_comparison_and}
+	_opList[op_comparison_not] = &Op{name: op_comparison_not}
+	_opList[op_comparison_nor] = &Op{name: op_comparison_nor}
+	_opList[op_comparison_or] = &Op{name: op_comparison_or}
 }
 
-func (l *OpList) Not() string {
-	return op_comparison_not
+func Op_And() *Op {
+	return _opList[op_comparison_and]
 }
 
-func (l *OpList) Nor() string {
-	return op_comparison_nor
+func Op_Not() *Op {
+	return _opList[op_comparison_not]
 }
 
-func (l *OpList) Or() string {
-	return op_comparison_or
+func Op_Nor() *Op {
+	return _opList[op_comparison_nor]
+}
+
+func Op_Or() *Op {
+	return _opList[op_comparison_or]
 }

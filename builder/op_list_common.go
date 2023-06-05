@@ -1,5 +1,9 @@
 package builder
 
-func (l *OpList) Set() string {
-	return setKey
+func init() {
+	_opList[setKey] = &Op{name: setKey}
+}
+
+func Op_Set() *Op {
+	return _opList[setKey]
 }

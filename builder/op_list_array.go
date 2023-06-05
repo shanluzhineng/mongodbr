@@ -19,26 +19,35 @@ const (
 	op_array_elemMatch string = "$elemMatch"
 )
 
-func (l *OpList) AddToSet() string {
-	return op_array_addToSet
+func init() {
+	_opList[op_array_addToSet] = &Op{name: op_array_addToSet}
+	_opList[op_array_pop] = &Op{name: op_array_pop}
+	_opList[op_array_pull] = &Op{name: op_array_pull}
+	_opList[op_array_push] = &Op{name: op_array_push}
+	_opList[op_array_pullAll] = &Op{name: op_array_pullAll}
+	_opList[op_array_elemMatch] = &Op{name: op_array_elemMatch}
 }
 
-func (l *OpList) Pop() string {
-	return op_array_pop
+func OP_AddToSet() *Op {
+	return _opList[op_array_addToSet]
 }
 
-func (l *OpList) Pull() string {
-	return op_array_pull
+func OP_Pop() *Op {
+	return _opList[op_array_pop]
 }
 
-func (l *OpList) Push() string {
-	return op_array_push
+func OP_Pull() *Op {
+	return _opList[op_array_pull]
 }
 
-func (l *OpList) PullAll() string {
-	return op_array_pullAll
+func OP_Push() *Op {
+	return _opList[op_array_push]
 }
 
-func (l *OpList) ElemMatch() string {
-	return op_array_elemMatch
+func OP_PullAll() *Op {
+	return _opList[op_array_pullAll]
+}
+
+func OP_ElemMatch() *Op {
+	return _opList[op_array_elemMatch]
 }

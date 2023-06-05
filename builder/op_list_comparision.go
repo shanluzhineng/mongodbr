@@ -21,37 +21,57 @@ const (
 	op_comparison_nin string = "$nin"
 )
 
-type OpList struct {
+type Op struct {
+	name string
 }
 
-func (l *OpList) Eq() string {
-	return op_comparison_eq
+func (op *Op) String() string {
+	return op.name
 }
 
-func (l *OpList) Gt() string {
-	return op_comparison_gt
+var (
+	_opList = map[string]*Op{}
+)
+
+func init() {
+	_opList[op_comparison_eq] = &Op{name: op_comparison_eq}
+	_opList[op_comparison_gt] = &Op{name: op_comparison_gt}
+	_opList[op_comparison_gte] = &Op{name: op_comparison_gte}
+	_opList[op_comparison_in] = &Op{name: op_comparison_in}
+	_opList[op_comparison_lt] = &Op{name: op_comparison_lt}
+	_opList[op_comparison_lte] = &Op{name: op_comparison_lte}
+	_opList[op_comparison_ne] = &Op{name: op_comparison_ne}
+	_opList[op_comparison_nin] = &Op{name: op_comparison_nin}
 }
 
-func (l *OpList) Gte() string {
-	return op_comparison_gte
+func Op_Eq() *Op {
+	return _opList[op_comparison_eq]
 }
 
-func (l *OpList) In() string {
-	return op_comparison_in
+func Op_Gt() *Op {
+	return _opList[op_comparison_gt]
 }
 
-func (l *OpList) Lt() string {
-	return op_comparison_lt
+func Op_Gte() *Op {
+	return _opList[op_comparison_gte]
 }
 
-func (l *OpList) Lte() string {
-	return op_comparison_lte
+func Op_In() *Op {
+	return _opList[op_comparison_in]
 }
 
-func (l *OpList) Ne() string {
-	return op_comparison_ne
+func Op_Lt() *Op {
+	return _opList[op_comparison_lt]
 }
 
-func (l *OpList) Nin() string {
-	return op_comparison_nin
+func Op_Lte() *Op {
+	return _opList[op_comparison_lte]
+}
+
+func Op_Ne() *Op {
+	return _opList[op_comparison_ne]
+}
+
+func Op_Nin() *Op {
+	return _opList[op_comparison_nin]
 }

@@ -31,14 +31,6 @@ type IEntityCreate interface {
 	CreateMany(itemList []interface{}, opts ...*options.InsertManyOptions) (ids []primitive.ObjectID, err error)
 }
 
-// update
-type IEntityUpdate interface {
-	FindOneAndUpdate(entity IEntity, opts ...*options.FindOneAndUpdateOptions) error
-	FindOneAndUpdateWithId(objectId primitive.ObjectID, update interface{}, opts ...*options.FindOneAndUpdateOptions) error
-	UpdateOne(filter interface{}, update interface{}, opts ...*options.UpdateOptions) error
-	UpdateMany(filter interface{}, update interface{}, opts ...*options.UpdateOptions) (interface{}, error)
-}
-
 type IEntityDelete interface {
 	// delete
 	DeleteOne(id primitive.ObjectID, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error)
