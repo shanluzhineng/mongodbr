@@ -28,26 +28,26 @@ func init() {
 	_opList[op_array_elemMatch] = &Op{name: op_array_elemMatch}
 }
 
-func OP_AddToSet() *Op {
+func Op_AddToSet() *Op {
 	return _opList[op_array_addToSet]
 }
 
-func OP_Pop() *Op {
+func Op_Pop() *Op {
 	return _opList[op_array_pop]
 }
 
-func OP_Pull() *Op {
+func Op_Pull() *Op {
 	return _opList[op_array_pull]
 }
 
-func OP_Push() *Op {
+func Op_Push() *Op {
 	return _opList[op_array_push]
 }
 
-func OP_PullAll() *Op {
+func Op_PullAll() *Op {
 	return _opList[op_array_pullAll]
 }
 
-func OP_ElemMatch() *Op {
+func Op_ElemMatch() *Op {
 	return _opList[op_array_elemMatch]
 }
