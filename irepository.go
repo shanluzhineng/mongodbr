@@ -13,6 +13,7 @@ type IRepository interface {
 	IEntityUpdate
 	IEntityDelete
 	IEntityIndex
+	IEntityBulkWrite
 
 	// aggregate
 	Aggregate(pipeline interface{}, dataList interface{}, opts ...AggregateOption) (err error)
