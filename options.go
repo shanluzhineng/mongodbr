@@ -15,6 +15,7 @@ var (
 	DefaultConfiguration = NewConfiguration()
 	//默认的client
 	DefaultClient *mongo.Client
+	_cachedClient map[string]*mongo.Client
 )
 
 // enable mongodb monitor
@@ -38,6 +39,33 @@ func EnableMongodbMonitor() func(*options.ClientOptions) {
 
 // 构建默认的client
 func SetupDefaultClient(uri string, opts ...func(*options.ClientOptions)) (*mongo.Client, error) {
+	client, err := createClient(uri, opts...)
+	if err != nil {
+		return nil, err
+	}
+	DefaultClient = client
+	return DefaultClient, nil
+}
+
+func RegistClient(key string, uri string, opts ...func(*options.ClientOptions)) (*mongo.Client, error) {
+	client, err := createClient(uri, opts...)
+	if err != nil {
+		return nil, err
+	}
+	_cachedClient[key] = client
+	return client, nil
+}
+
+// get client by key
+func GetClient(key string) *mongo.Client {
+	client, ok := _cachedClient[key]
+	if !ok {
+		return nil
+	}
+	return client
+}
+
+func createClient(uri string, opts ...func(*options.ClientOptions)) (*mongo.Client, error) {
 	//测试能否连接
 	clientOptions := options.Client().ApplyURI(uri)
 	for _, eachOpt := range opts {
@@ -48,9 +76,7 @@ func SetupDefaultClient(uri string, opts ...func(*options.ClientOptions)) (*mong
 	if err != nil {
 		return nil, fmt.Errorf("无法初始化mongodb,在连接到mongodb时出现异常,异常信息:%s", err.Error())
 	}
-
-	DefaultClient = client
-	return DefaultClient, nil
+	return client, nil
 }
 
 type Configuration struct {
