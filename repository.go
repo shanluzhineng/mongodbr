@@ -9,6 +9,7 @@ import (
 )
 
 type NewRepositoryOption struct {
+	clientKey        string
 	databaseName     string
 	collectionName   string
 	DefaultSortField string
@@ -17,6 +18,13 @@ type NewRepositoryOption struct {
 func newDefaultRepositoryOption() *NewRepositoryOption {
 	o := &NewRepositoryOption{}
 	return o
+}
+
+// specifiy repository with client key
+func RepositoryOptionWithClientKey(clientKey string) func(*NewRepositoryOption) {
+	return func(nro *NewRepositoryOption) {
+		nro.clientKey = clientKey
+	}
 }
 
 func NewRepository(databaseName string, collectionName string, opts ...func(*NewRepositoryOption)) (*RepositoryBase, error) {
@@ -34,7 +42,12 @@ func NewRepository(databaseName string, collectionName string, opts ...func(*New
 	for _, eachOpt := range opts {
 		eachOpt(o)
 	}
-	collection := GetCollection(databaseName, collectionName)
+	var collection *mongo.Collection
+	if len(o.clientKey) <= 0 {
+		collection = GetCollection(o.databaseName, o.collectionName)
+	} else {
+		collection = GetCollectionByKey(o.clientKey, o.databaseName, o.collectionName)
+	}
 	mongodbrOpts := make([]RepositoryOption, 0)
 	if len(o.DefaultSortField) > 0 {
 		mongodbrOpts = append(mongodbrOpts, WithDefaultSort(func(fo *options.FindOptions) *options.FindOptions {
