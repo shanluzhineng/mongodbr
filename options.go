@@ -15,7 +15,7 @@ var (
 	DefaultConfiguration = NewConfiguration()
 	//默认的client
 	DefaultClient *mongo.Client
-	_cachedClient map[string]*mongo.Client
+	_cachedClient map[string]*mongo.Client = make(map[string]*mongo.Client)
 )
 
 // enable mongodb monitor

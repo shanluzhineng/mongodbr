@@ -21,6 +21,18 @@ func GetDatabase(databaseName string, opts ...*options.DatabaseOptions) *mongo.D
 	return DefaultClient.Database(databaseName, opts...)
 }
 
+// get mongo.Database instance
+func GetDatabaseByKey(key string, databaseName string, opts ...*options.DatabaseOptions) *mongo.Database {
+	client := GetClient(key)
+	if client == nil {
+		return nil
+	}
+	if len(databaseName) <= 0 {
+		return nil
+	}
+	return client.Database(databaseName, opts...)
+}
+
 // get mongo.Collection instanc
 func GetCollection(databaseName string, collectionName string, opts ...*options.CollectionOptions) *mongo.Collection {
 	database := GetDatabase(databaseName)
@@ -33,14 +45,25 @@ func GetCollection(databaseName string, collectionName string, opts ...*options.
 	return database.Collection(collectionName, opts...)
 }
 
-func Ping() error {
-	if DefaultClient == nil {
-		return fmt.Errorf("先调用SetupDefaultClient方法创建好一个Client对象后,再调用此方法")
+func GetCollectionByKey(key string, databaseName string, collectionName string, opts ...*options.CollectionOptions) *mongo.Collection {
+	database := GetDatabaseByKey(key, databaseName)
+	if database == nil {
+		return nil
+	}
+	if len(collectionName) <= 0 {
+		return nil
+	}
+	return database.Collection(collectionName, opts...)
+}
+
+func Ping(client *mongo.Client) error {
+	if client == nil {
+		return fmt.Errorf("client is nil")
 	}
 	//测试ping
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	err := DefaultClient.Ping(ctx, readpref.Primary())
+	err := client.Ping(ctx, readpref.Primary())
 	if err != nil {
 		return fmt.Errorf("mongodb ping测试时出现异常,异常信息:%s", err.Error())
 	}
