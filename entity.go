@@ -9,6 +9,9 @@ type Entity struct {
 	ObjectId primitive.ObjectID `json:"objectId,omitempty" bson:"_id"`
 }
 
+// modify IEntity object
+type EntityOption = func(e IEntity)
+
 type IEntity interface {
 	GetObjectId() primitive.ObjectID
 }
