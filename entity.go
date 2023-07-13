@@ -14,6 +14,7 @@ type EntityOption = func(e IEntity)
 
 type IEntity interface {
 	GetObjectId() primitive.ObjectID
+	SetObjectId(id primitive.ObjectID)
 }
 
 type IEntityBeforeCreate interface {
@@ -33,6 +34,10 @@ func (entity *Entity) BeforeCreate() {
 
 func (entity *Entity) GetObjectId() primitive.ObjectID {
 	return entity.ObjectId
+}
+
+func (entity *Entity) SetObjectId(id primitive.ObjectID) {
+	entity.ObjectId = id
 }
 
 // AggregateOptions handler pipeline
